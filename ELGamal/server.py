@@ -4,7 +4,6 @@ import threading
 import random
 import math
 import re
-import hashlib
 class Server:
     """Server"""
 
@@ -21,23 +20,31 @@ class Server:
         self.s.listen(100)
 
         # generate keys ...
+        print("Generating keys...")
         self.create_keys()
+        print("Keys generated")
+        print(f"My P: {self.p}")
+        print(f"My G: {self.g}")
+        print(f"My E: {self.e}")
+        print(f"My secret A: {self.__a}")
 
 
         while True:
             c, addr = self.s.accept()
             username = c.recv(1024).decode()
             print(f"{username} tries to connect")
-            self.broadcast(f'new person has joined: {username}')
+            self.broadcast(f'n :{username}')
             self.username_lookup[c] = username
             self.clients.append(c)
 
             # receive client`s public key
+            print(f"Receiving {self.username_lookup[c]} keys...")
             client_public_key = c.recv(1024).decode()
             self.public_keys[c] = client_public_key
+            print("Received")
 
             # send public key to the client
-            server_public_key = f"{self.n},{self.e}"
+            server_public_key = f"{self.p},{self.g},{self.e}"
             c.send(server_public_key.encode())
 
             print(f"{username} has succesfully connected")
@@ -46,27 +53,32 @@ class Server:
 
 
     def decode_message(self, c1, c2):
-        """Decodes a message using block rsa"""
+        """Decodes a message using ELGamal algorithm"""
+        print(f"c1: {c1}")
+        print(f"c2: {c2}")
         s = pow(c1, self.__a, self.p)
+        print(f"s: {s}")
         numeric_string = str(pow(c2*pow(s, self.p - 2, self.p), 1, self.p))
         padding_needed = (3 - len(numeric_string) % 3) % 3
         numeric_string = numeric_string.zfill(len(numeric_string)+padding_needed)
+        print(f"Numeric string: {numeric_string}")
         decoded_message = ''.join(chr(int(numeric_string[i:i+3])) for i in range(0, len(numeric_string), 3))
+        print(f"Decoded: {decoded_message}")
         return decoded_message
 
 
-    def encode_message(self, message, client_n, client_e):
-        """Encodes a message using block rsa"""
-        client_block_size = len(str(client_n))-1
+    def encode_message(self, message, client_p, client_g, client_e):
+        """Encodes a message for a specific client using ELGamal algo"""
         numeric_string = ''.join(f"{ord(c):03d}" for c in message)
-
-        blocks = [numeric_string[i:i+client_block_size] for i in range(0, len(numeric_string), client_block_size)]
-        last_block_size = len(blocks[-1])
-        encrypted_blocks = [str(pow(int(block), client_e, client_n)).zfill(client_block_size+1) for block in blocks]
-
-        encrypted_message = "".join(encrypted_blocks)
-        full_message = f"{encrypted_message}|{last_block_size}"
-        return full_message
+        print(f"Numeric string: {numeric_string}")
+        k = random.randint(2, client_p-2)
+        print(f"Random k: {k}")
+        c1 = pow(client_g, k, client_p)
+        print(f"c1: {c1}")
+        c2 = pow(int(numeric_string)*pow(client_e, k, client_p), 1, client_p)
+        print(f"c2: {c2}")
+        message_to_send = f"{c1},{c2}"
+        return message_to_send
 
 
     def broadcast(self, msg: str):
@@ -74,14 +86,12 @@ class Server:
         for client in self.clients:
 
             # encrypt the message
-
+            print(f"Encrypting: {msg}")
             pub_key = self.public_keys[client]
-            client_n, client_e = map(int, pub_key.split(","))
-            encoded_message = self.encode_message(msg, client_n, client_e)
-
-            msg_hash = hashlib.sha256(msg.encode()).hexdigest()
-            full_message = f"{msg_hash}|{encoded_message}"
-            client.send(full_message.encode())
+            client_p, client_g, client_e = map(int, pub_key.split(","))
+            encoded_message = self.encode_message(msg, client_p, client_g, client_e)
+            print(f"Ecrypted msg: {encoded_message}")
+            client.send(encoded_message.encode())
 
     def handle_client(self, c: socket, addr):
         """Handles a wanted client"""
@@ -90,21 +100,17 @@ class Server:
             user_getter = None
             msg = c.recv(1024).decode()
 
-            c1, c2 = msg.split(",")
+            print(f"Message to decode: {msg}")
+            c1, c2 = map(int, msg.split(","))
 
             decoded_message = self.decode_message(c1, c2)
-
-            # check if hashes are the same
-            new_hash = hashlib.sha256(decoded_message.encode()).hexdigest()
-            if new_hash != received_hash:
-                raise ValueError("Hashes of the same message are not the same!")
-
+            print(f"Decoded msg: {decoded_message}")
             # look to whom is this message for
             match = re.search(r'@\w+:', decoded_message)
             if match:
                 user_getter = match.group(0)[:-1]
                 message_to_send = decoded_message[match.end():].lstrip()
-                message_to_send = f"From @{sender_name}: "+message_to_send
+                message_to_send = f"F@{sender_name}:"+message_to_send
             else:
                 raise ValueError("Please, correctly type the name of \
 the person you want to send a message to")
@@ -113,12 +119,11 @@ the person you want to send a message to")
                 if self.username_lookup[client] == user_getter[1:]:
                     # get the wanted client`s keys
                     pub_key = self.public_keys[client]
-                    client_n, client_e = map(int, pub_key.split(","))
-                    encoded_message = self.encode_message(message_to_send, client_n, client_e)
-
-                    msg_hash = hashlib.sha256(message_to_send.encode()).hexdigest()
-                    full_message = f"{msg_hash}|{encoded_message}"
-                    client.send(full_message.encode())
+                    client_p, client_g, client_e = map(int, pub_key.split(","))
+                    print(f"Encoding for {client}: {message_to_send}")
+                    encoded_message = self.encode_message(message_to_send, client_p, client_g, client_e)
+                    print(f"Encoded message for {client}: {encoded_message}")
+                    client.send(encoded_message.encode())
 
 
     @staticmethod
@@ -136,8 +141,8 @@ the person you want to send a message to")
     def generate_prime(min_value, max_value) -> int:
         """Generates a random prime number in given range"""
         prime = random.randint(min_value, max_value)
-        while not Server.is_prime(prime):
-            prime = random.randint(min_value, max_value)
+        while not Server.miller_rabin(prime):
+            prime += 1
         return prime
 
     @staticmethod
@@ -150,8 +155,12 @@ the person you want to send a message to")
 
     def create_keys(self):
         """Creates public and private keys for a client"""
-        p = self.generate_prime(10**10, 10**14)
+        print("Generating p...")
+        p = self.generate_prime(10**20, 10**21)
+        print("Generated")
+        print("Generating g...")
         g = self.find_primitive_root(p)
+        print("Generated")
         secret_a = random.randint(2, p-2)
         e = pow(g, secret_a, p)
         self.p, self.g, self.e, self.__a = p, g, e, secret_a
@@ -173,18 +182,59 @@ the person you want to send a message to")
     @staticmethod
     def find_primitive_root(p):
         """Finds a random primitive root of mod p"""
-        if p == 2:
-            return 1
         factors = Server.prime_factors(p - 1)
-        for g in range(2, p):
-            flag = True
-            for q in factors:
-                if pow(g, (p - 1) // q, p) == 1:
-                    flag = False
-                    break
-            if flag:
+        while True:
+            g = random.randint(2, p-2)
+            if all(pow(g, (p-1)//q, p) != 1 for q in factors):
                 return g
+        # for g in range(2, p):
+        #     flag = True
+        #     for q in factors:
+        #         if pow(g, (p - 1) // q, p) == 1:
+        #             flag = False
+        #             break
+        #     if flag:
+        #         return g
         return None
+
+
+    @staticmethod
+    def miller_rabin(n, k=100):
+        """
+        Function to check if a number is prime using Miller-Rabin primality test.
+
+        n: int - The number to check for primality.
+        k: int - The number of iterations for accuracy.
+        Returns True if n is probably prime, False if n is composite.
+        """
+        if n <= 1:
+            return False
+        if n <= 3:
+            return True
+        if n % 2 == 0:
+            return False
+
+        r, d = 0, n - 1
+        while d % 2 == 0:
+            d //= 2
+            r += 1
+
+        for _ in range(k):
+            a = random.randint(2, n - 2)
+            x = pow(a, d, n)
+
+            if x == 1 or x == n - 1:
+                continue
+
+            for _ in range(r - 1):
+                x = pow(x, 2, n)
+                if x == n - 1:
+                    break
+            else:
+                return False
+
+        return True
+
 
 if __name__ == "__main__":
     s = Server(9001)
