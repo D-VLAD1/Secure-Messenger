@@ -26,15 +26,12 @@ class Client:
         self.create_keys()
 
         # exchange public keys
-        public_key = f"{self.n},{self.e}"  # Sending n and e as a public key
+        public_key = f"{self.p},{self.g},{self.e}"
         self.s.send(public_key.encode())
 
         # receive the encrypted secret key
         server_public_key = self.s.recv(1024).decode()
-        self.server_n, self.server_e = map(int, server_public_key.split(","))
-
-        # determine encrypted block length based on server_n
-        self.server_block_size = len(str(self.server_n)) - 1
+        self.server_p, self.server_g, self.server_e = map(int, server_public_key.split(","))
 
         message_handler = threading.Thread(target=self.read_handler,args=())
         message_handler.start()
@@ -46,37 +43,25 @@ class Client:
         while True:
 
             message = self.s.recv(1024).decode()
-            received_hash, message, last_block_len = message.split("|")
-            encrypted_blocks = [message[i:i+self.block_size+1] for i in range(0, len(message), self.block_size+1)]
-            decrypted_blocks = [str(pow(int(block), self.__d, self.n)) for block in encrypted_blocks]
-            decrypted_filled_blocks = [block.zfill(self.block_size) if i != len(encrypted_blocks)-1 else block.zfill(int(last_block_len))
-                                for i, block in enumerate(decrypted_blocks)]
-            numeric_string = "".join(decrypted_filled_blocks)
-
-            decoded_message = "".join(chr(int(numeric_string[i:i+3])) for i in range(0, len(numeric_string), 3))
-
-            new_hash = hashlib.sha256(decoded_message.encode()).hexdigest()
-            if new_hash != received_hash:
-                raise ValueError("Hashes of the same message are not the same!")
-
+            c1, c2 = map(int, message.split(","))
+            s = pow(c1, self.__a, self.p)
+            numeric_string = str(pow(c2*pow(s, self.p - 2, self.p), 1, self.p))
+            padding_needed = (3 - len(numeric_string) % 3) % 3
+            numeric_string = numeric_string.zfill(len(numeric_string)+padding_needed)
+            decoded_message = ''.join(chr(int(numeric_string[i:i+3])) for i in range(0, len(numeric_string), 3))
             print(decoded_message)
 
     def write_handler(self):
-        """Writes a message and encrypts it using RSA block encoding"""
+        """Writes a message and encrypts it using ELGamal encoding"""
         while True:
             message = input()
-            message_hash = hashlib.sha256(message.encode()).hexdigest()
-
             numeric_string = ''.join(f"{ord(c):03d}" for c in message)
+            k = random.randint(2, self.server_p-2)
+            c1 = pow(self.server_g, k, self.server_p)
+            c2 = pow(int(numeric_string)*self.server_e**k, 1, self.server_p)
 
-            blocks = [numeric_string[i:i+self.server_block_size]
-                      for i in range(0, len(numeric_string), self.server_block_size)]
-            last_block_len = len(blocks[-1])
-            encrypted_blocks = [str(pow(int(block), self.server_e, self.server_n)).zfill(self.server_block_size+1) for block in blocks]
-
-            encrypted_message = "".join(encrypted_blocks)
-            full_message = f"{message_hash}|{encrypted_message}|{last_block_len}"
-            self.s.send(full_message.encode())
+            message_to_send = f"{c1},{c2}"
+            self.s.send(message_to_send.encode())
 
     @staticmethod
     def is_prime(number) -> bool:
@@ -106,10 +91,42 @@ class Client:
         raise ValueError("gcd(e, d) is not 1")
 
     def create_keys(self):
-        """Creates public and private key for a client"""
-        # private p, q
-        self.p = self.generate_prime(10**10, 10**14)
-        return self.p
+        """Creates public and private keys for a client"""
+        p = self.generate_prime(10**10, 10**14)
+        g = self.find_primitive_root(p)
+        secret_a = random.randint(2, p-2)
+        e = pow(g, secret_a, p)
+        self.p, self.g, self.e, self.__a = p, g, e, secret_a
+
+    @staticmethod
+    def prime_factors(n):
+        """Finds all prime factors of a number n"""
+        factors = set()
+        d = 2
+        while d * d <= n:
+            while n % d == 0:
+                factors.add(d)
+                n //= d
+            d += 1
+        if n > 1:
+            factors.add(n)
+        return factors
+
+    @staticmethod
+    def find_primitive_root(p):
+        """Finds a random primitive root of mod p"""
+        if p == 2:
+            return 1
+        factors = Client.prime_factors(p - 1)
+        for g in range(2, p):
+            flag = True
+            for q in factors:
+                if pow(g, (p - 1) // q, p) == 1:
+                    flag = False
+                    break
+            if flag:
+                return g
+        return None
 
 if __name__ == "__main__":
     cl = Client("127.0.0.1", 9001, "nigga")

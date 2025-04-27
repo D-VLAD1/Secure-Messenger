@@ -15,13 +15,6 @@ class Server:
         self.username_lookup = {}
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.public_keys = {}
-        self.server_private_key = None
-        self.__p = None
-        self.__q = None
-        self.__phi_n = None
-        self.n = None
-        self.e = None
-        self.__d = None
 
     def start(self):
         self.s.bind((self.host, self.port))
@@ -52,15 +45,15 @@ class Server:
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
 
-    def decode_message(self, encrypted_part, last_block_len):
+    def decode_message(self, c1, c2):
         """Decodes a message using block rsa"""
-        encrypted_blocks = [encrypted_part[i:i+self.block_size+1] for i in range(0, len(encrypted_part), self.block_size+1)]
-        decrypted_blocks = [str(pow(int(block), self.__d, self.n)) for block in encrypted_blocks]
-        decrypted_filled_blocks = [block.zfill(self.block_size) if i != len(encrypted_blocks)-1 else block.zfill(int(last_block_len))
-                            for i, block in enumerate(decrypted_blocks)]
-        numeric_string = "".join(decrypted_filled_blocks)
-        decoded_message = "".join(chr(int(numeric_string[i:i+3])) for i in range(0, len(numeric_string), 3))
+        s = pow(c1, self.__a, self.p)
+        numeric_string = str(pow(c2*pow(s, self.p - 2, self.p), 1, self.p))
+        padding_needed = (3 - len(numeric_string) % 3) % 3
+        numeric_string = numeric_string.zfill(len(numeric_string)+padding_needed)
+        decoded_message = ''.join(chr(int(numeric_string[i:i+3])) for i in range(0, len(numeric_string), 3))
         return decoded_message
+
 
     def encode_message(self, message, client_n, client_e):
         """Encodes a message using block rsa"""
@@ -97,15 +90,9 @@ class Server:
             user_getter = None
             msg = c.recv(1024).decode()
 
-            # check if there is a hash in a message
-            try:
-                received_hash, encrypted_part, last_block_len = msg.split("|")
-            except ValueError:
-                print("Please, calculate the hash of a message and send it as "\
-                      "'hash|encrypted_message'")
-                continue
+            c1, c2 = msg.split(",")
 
-            decoded_message = self.decode_message(encrypted_part, last_block_len)
+            decoded_message = self.decode_message(c1, c2)
 
             # check if hashes are the same
             new_hash = hashlib.sha256(decoded_message.encode()).hexdigest()
@@ -135,15 +122,6 @@ the person you want to send a message to")
 
 
     @staticmethod
-    def generate_prime(min_value, max_value) -> int:
-        """Generates a random prime number in given range"""
-        prime = random.randint(min_value, max_value)
-        while not Server.is_prime(prime):
-            prime = random.randint(min_value, max_value)
-        return prime
-
-
-    @staticmethod
     def is_prime(number) -> bool:
         """Checks if a number is prime"""
         if number <2:
@@ -154,7 +132,13 @@ the person you want to send a message to")
                 return False
         return True
 
-
+    @staticmethod
+    def generate_prime(min_value, max_value) -> int:
+        """Generates a random prime number in given range"""
+        prime = random.randint(min_value, max_value)
+        while not Server.is_prime(prime):
+            prime = random.randint(min_value, max_value)
+        return prime
 
     @staticmethod
     def mod_inverse(e, phi) -> int:
@@ -165,22 +149,42 @@ the person you want to send a message to")
         raise ValueError("gcd(e, d) is not 1")
 
     def create_keys(self):
-        """Creates public and private key for a server"""
-        # private p, q
-        self.__p = self.generate_prime(1000, 5000)
-        self.__q = self.generate_prime(1000, 5000)
-        while self.__p==self.__q:
-            self.__q = self.generate_prime(1000, 5000)
+        """Creates public and private keys for a client"""
+        p = self.generate_prime(10**10, 10**14)
+        g = self.find_primitive_root(p)
+        secret_a = random.randint(2, p-2)
+        e = pow(g, secret_a, p)
+        self.p, self.g, self.e, self.__a = p, g, e, secret_a
 
-        self.n = self.__p * self.__q # public key "n"
-        self.__phi_n = (self.__p-1)*(self.__q-1)
-        self.e =random.randint(3, self.__phi_n-1) # public key "e"
-        while math.gcd(self.e, self.__phi_n) !=1 :
-            self.e =random.randint(3, self.__phi_n-1)
+    @staticmethod
+    def prime_factors(n):
+        """Finds all prime factors of a number n"""
+        factors = set()
+        d = 2
+        while d * d <= n:
+            while n % d == 0:
+                factors.add(d)
+                n //= d
+            d += 1
+        if n > 1:
+            factors.add(n)
+        return factors
 
-        self.__d = self.mod_inverse(self.e, self.__phi_n) # secret key "d"
-        # block size
-        self.block_size = len(str(self.n)) - 1
+    @staticmethod
+    def find_primitive_root(p):
+        """Finds a random primitive root of mod p"""
+        if p == 2:
+            return 1
+        factors = Server.prime_factors(p - 1)
+        for g in range(2, p):
+            flag = True
+            for q in factors:
+                if pow(g, (p - 1) // q, p) == 1:
+                    flag = False
+                    break
+            if flag:
+                return g
+        return None
 
 if __name__ == "__main__":
     s = Server(9001)
