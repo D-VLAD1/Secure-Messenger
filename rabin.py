@@ -1,5 +1,4 @@
 import random
-import math
 
 def is_prime(n):
     if n < 2:
