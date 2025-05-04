@@ -1,7 +1,7 @@
 """Module to generate DSA keys and parameters."""
 import random
 import hashlib
-from utils import get_prime, get_strong_prime
+from DSA.utils import get_prime, get_strong_prime
 
 def generate_params():
     """
