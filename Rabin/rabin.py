@@ -60,18 +60,19 @@ def decrypt(c, p, q):
     # Return unique roots
     return tuple(sorted({r1, r2, r3, r4}))
 
-# Example usage
-n, p, q = generate_keys()
-print(f"Generated keys: n={n}, p={p}, q={q}")
+if __name__ == "__main":
+    # Example usage
+    n, p, q = generate_keys()
+    print(f"Generated keys: n={n}, p={p}, q={q}")
 
-message = 42
-assert message < n, "Message must be smaller than n!"
+    message = 42
+    assert message < n, "Message must be smaller than n!"
 
-ciphertext = encrypt(message, n)
-print(f"Ciphertext: {ciphertext}")
+    ciphertext = encrypt(message, n)
+    print(f"Ciphertext: {ciphertext}")
 
-decrypted = decrypt(ciphertext, p, q)
-print(f"Decrypted roots: {decrypted}")
+    decrypted = decrypt(ciphertext, p, q)
+    print(f"Decrypted roots: {decrypted}")
 
-# Verify one of the roots matches original message
-assert message in decrypted, "Decryption failed!"
+    # Verify one of the roots matches original message
+    assert message in decrypted, "Decryption failed!"

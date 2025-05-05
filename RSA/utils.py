@@ -39,13 +39,13 @@ def miller_rabin(n, k=100):
     return True
 
 
-def get_key():
+def get_key(min_value, max_value):
     """
     Function to generate a large prime number for RSA encryption.
     
     Returns a prime number that is ~100 digits long.
     """
-    num = random.randint(10 ** 100, 10 ** 101)
+    num = random.randint(min_value, max_value)
     while True:
         if miller_rabin(num):
             return num

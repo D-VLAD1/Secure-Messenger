@@ -26,7 +26,7 @@ class Client:
         self.s.send(self.username.encode())
 
         # create key pairs(prime numbers)
-        p, q = get_key(), get_key()
+        p, q = get_key(10**100, 10**101), get_key(10**100, 10**101)
         self.mod = p * q
         phi = (p - 1) * (q - 1)
 

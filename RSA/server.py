@@ -20,7 +20,7 @@ class Server:
         self.s.bind((self.host, self.port))
         self.s.listen(100)
 
-        p, q = get_key(), get_key()
+        p, q = get_key(10**100, 10**101), get_key(10**100, 10**101)
         self.mod = p * q
         phi = (p - 1) * (q - 1)
 
