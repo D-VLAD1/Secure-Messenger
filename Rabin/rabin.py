@@ -40,9 +40,9 @@ def generate_keys():
     # Ensure p ≡ q ≡ 3 mod 4
     p = q = 4
     while not (miller_rabin(p) and p % 4 == 3):
-        p = random.randint(2**5, 2**6)
+        p = random.randint(10**50, 10**60)
     while not (miller_rabin(q) and q % 4 == 3) or q == p:
-        q = random.randint(2**5, 2**6)
+        q = random.randint(10**50, 10**60)
     n = p * q
     return (n, p, q)
 
@@ -86,3 +86,4 @@ print(f"Decrypted roots: {decrypted}")
 
 # Verify one of the roots matches original message
 assert message in decrypted, "Decryption failed!"
+print("Decryption successful!")
