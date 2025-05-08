@@ -25,10 +25,6 @@ g = int(lines[2].split(": ")[1])
 
 SERVER_URL = "wss://helo-bw8r.onrender.com/ws/"
 
-headers = {
-    "Origin": "https://helo-bw8r.onrender.com"
-}
-
 class SignalHandler(QObject):
     """Signal handler for PyQt signals."""
     new_message = pyqtSignal(str)
@@ -128,7 +124,7 @@ class ChatClient(QWidget):
 
     async def __fetch_public_key(self, username):
         try:
-            async with websockets.connect(SERVER_URL + f'get_key_{username}', extra_headers=headers) as websocket:
+            async with websockets.connect(SERVER_URL + f'get_key_{username}') as websocket:
                 public_key = await websocket.recv() ## gettin key from server
                 print(public_key)
                 self.selected_recipient_key = ast.literal_eval(public_key)
