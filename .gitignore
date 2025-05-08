@@ -1,7 +1,5 @@
 __pycache__/
-algorithm_analysis
 **/.DS_Store
 render.yaml
 .venv1
 .idea
-main
