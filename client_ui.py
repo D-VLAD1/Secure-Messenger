@@ -25,6 +25,10 @@ g = int(lines[2].split(": ")[1])
 
 SERVER_URL = "wss://helo-bw8r.onrender.com/ws/"
 
+headers = {
+    "Origin": "https://helo-bw8r.onrender.com"
+}
+
 class SignalHandler(QObject):
     """Signal handler for PyQt signals."""
     new_message = pyqtSignal(str)
@@ -124,8 +128,9 @@ class ChatClient(QWidget):
 
     async def __fetch_public_key(self, username):
         try:
-            with websockets.connect(SERVER_URL + f'ws/get_key_{username}') as websocket:
-                public_key = await websocket.recieve_text() ## gettin key from server
+            async with websockets.connect(SERVER_URL + f'get_key_{username}', extra_headers=headers) as websocket:
+                public_key = await websocket.recv() ## gettin key from server
+                print(public_key)
                 self.selected_recipient_key = ast.literal_eval(public_key)
         except Exception as e:
             print(f"❌ Помилка отримання ключа користувача {username}: {e}")
@@ -134,7 +139,8 @@ class ChatClient(QWidget):
         """Handle user selection from the list."""
         self.selected_recipient = item.text()
         self.message_input.setPlaceholderText(f"Пишете до: {self.selected_recipient}")
-        threading.Thread(target=self.__fetch_public_key, args=(self.selected_recipient,), daemon=True).start()
+        threading.Thread(target=lambda: asyncio.run(self.__fetch_public_key(self.selected_recipient)),
+                         daemon=True).start()
 
     def run_client(self):
         """Run the asyncio event loop in a separate thread."""
