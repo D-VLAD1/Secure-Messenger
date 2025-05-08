@@ -4,17 +4,17 @@ from typing import Dict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse
 
-from DSA.sign_utils import generate_params
+# from DSA.sign_utils import generate_params
 
 app = FastAPI()
 connected_users: Dict[str, tuple[WebSocket, str]] = {}
 
 # p, q, g = generate_params()
 
-with open("DSA_params.txt", "w", encoding="utf-8") as f:
-    f.write(f"p: {p}\n")
-    f.write(f"q: {q}\n")
-    f.write(f"g: {g}\n")
+# with open("DSA_params.txt", "w", encoding="utf-8") as f:
+#     f.write(f"p: {p}\n")
+#     f.write(f"q: {q}\n")
+#     f.write(f"g: {g}\n")
 
 async def broadcast_users():
     """Broadcast the list of connected users to all clients."""
