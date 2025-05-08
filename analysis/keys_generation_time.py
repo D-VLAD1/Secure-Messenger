@@ -6,6 +6,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import RSA.utils
 import Elgamal.utils
+import Rabin.rabin
+import ECC.client, ECC.utils
 
 def key_gen_time_rsa(min_val, max_val, iterations):
     """Returns an average time to generate RSA keys"""
@@ -28,7 +30,7 @@ def key_gen_time_rsa(min_val, max_val, iterations):
 
 
 def key_gen_time_elgamal(min_val, max_val, iterations):
-    """Returns an average time to generate RSA keys"""
+    """Returns an average time to generate Elgamal keys"""
     result = []
     print("Elgamal keys are generating...")
     for _ in range(iterations):
@@ -39,16 +41,43 @@ def key_gen_time_elgamal(min_val, max_val, iterations):
         e = pow(g, secret_a, p) # e
         one_iter_time = time.time() - start_time
         result.append(one_iter_time)
+        print(f"Iteration: {_}")
     print("Elgamal keys are done!")
     average_time = sum(result)/len(result)
     return average_time
 
+def key_gen_time_rabin(min_val, max_val, iterations):
+    """Returns an average time to generate Rabin keys"""
+    result = []
+    print("Rabin keys are generating...")
+    for _ in range(iterations):
+        start_time = time.time()
+        n, p, q = Rabin.rabin.generate_keys(min_val, max_val) # n-public p, q-private
+        one_iter_time = time.time() - start_time
+        result.append(one_iter_time)
+    print("Rabin keys are done!")
+    average_time = sum(result)/len(result)
+    return average_time
 
+def key_gen_time_ecc(min_val, max_val, iterations):
+    """Returns an average time to generate ECC keys"""
+    result = []
+    print("ECC keys are generating...")
+    for _ in range(iterations):
+        start_time = time.time()
+        curve = ECC.client.Curve(ECC.utils.get_prime(), ECC.utils.get_prime(), ECC.utils.get_prime())
+        one_iter_time = time.time() - start_time
+        result.append(one_iter_time)
+    print("ECC keys are done!")
+    average_time = sum(result)/len(result)
+    return average_time
 
 if __name__ == "__main__":
     min_value, max_value = 10**50, 10**51
-    iters = 20
-    rsa_time = key_gen_time_rsa(min_value, max_value, iters)
-    elg_time = key_gen_time_elgamal(min_value, max_value, iters)
-    print(rsa_time)
-    print(elg_time)
+    iters = 100
+    # rabin_time = key_gen_time_rabin(min_value, max_value, iters)
+    # print(rabin_time)
+    # rsa_time = key_gen_time_rsa(min_value, max_value, iters)
+    # print(rsa_time)
+    # elg_time = key_gen_time_elgamal(min_value, max_value, iters)
+    # print(elg_time)
