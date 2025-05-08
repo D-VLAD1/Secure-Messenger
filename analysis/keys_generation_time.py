@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import RSA.utils
 import Elgamal.utils
 import Rabin.rabin
+import ECC.client, ECC.utils
 
 def key_gen_time_rsa(min_val, max_val, iterations):
     """Returns an average time to generate RSA keys"""
@@ -78,5 +79,5 @@ if __name__ == "__main__":
     # print(rabin_time)
     # rsa_time = key_gen_time_rsa(min_value, max_value, iters)
     # print(rsa_time)
-    elg_time = key_gen_time_elgamal(min_value, max_value, iters)
-    print(elg_time)
+    # elg_time = key_gen_time_elgamal(min_value, max_value, iters)
+    # print(elg_time)

@@ -23,14 +23,14 @@ iters = 100
 message = "Test message for checking encoding and decoding speed"
 rsa_enc_time = 0.00001367330551147461
 elg_enc_time = 0.0003565835952758789
-rabin_enc_time = 0
-ecc_enc_time = 0
+rabin_enc_time = 0.0000096106529
+ecc_enc_time = 6.926059722900391e-06
 
 # Дешифрування
 rsa_dec_time = 0.0015830945968627929
 elg_dec_time = 0.0003760385513305664
-rabin_dec_time = 0
-ecc_dec_time = 0
+rabin_dec_time = 0.0013728952407836914
+ecc_dec_time = 5.47647476196289e-06
 
 
 class PlotWindow(QWidget):
@@ -41,7 +41,7 @@ class PlotWindow(QWidget):
 
         # Створення графіка
         self.resize(800, 600)
-        fig = Figure(figsize=(7, 5))
+        fig = Figure(figsize=(4, 3))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111)
         ax.bar(x_data, y_data)
@@ -93,9 +93,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
 
     def show_gen_time(self):
-        footer = "Elgamal - найдовша генерація через проблему пошуку первісних коренів великого числа.\n" \
- "Rabin - найшвидше, бо треба всього лиш два великих простих числа p та q які дорівнюють 3mod4.\n" \
- "RSA - схоже до Rabin, невелика різниця\n" \
+        footer = "RSA - Швидкий генератор 2 простих p, q\n" \
+ "Elgamal - найдовша генерація через проблему пошуку первісного кореня g за mod p.\n" \
+ "Rabin - подібно до RSA, але з умовою що p ≡ q ≡ 3mod4.\n" \
  "ECC - генерація елементів групи, точки та обчислення множення займає небагато часу"
         self.plot_window = PlotWindow(
             f"Час генерації ключів розміру ~{key_len} на 100 ітераціях",
@@ -108,7 +108,10 @@ class MainWindow(QMainWindow):
         dec_times = [rsa_dec_time, elg_dec_time, rabin_dec_time, ecc_dec_time]
 
         # Графік шифрування
-        enc_footer = "RSA шифрує найшвидше, ElGamal трохи повільніше. Rabin та ECC не реалізовані."
+        enc_footer = "RSA - швидко, c = m^e mod n\n" \
+        "Elgamal - повільніше, бо працює з двома експонентами c1 = g^k modp, c2 = y^k*m modp з великим k\n" \
+        "Rabin - найшвидше, всьоголиш виконати c = m^2 modn\n" \
+        "ECC - найшвидше шифрування"
         self.plot_enc_window = PlotWindow(
             f"Час шифрування повідомлення\n m:'{message}'",
             algorithms,
@@ -119,7 +122,10 @@ class MainWindow(QMainWindow):
         self.plot_enc_window.show()
 
         # Графік дешифрування
-        dec_footer = "Розшифрування в RSA повільніше через велику приватну експоненту."
+        dec_footer = "RSA - повільно, використовується велика експонента d\n" \
+        "Elgamal - всього менше обчислень ніж у RSA\n" \
+        "Rabin - не найкращий через обчислення зразу чотирьох коренів із яких один правильний\n" \
+        "ECC - найшвидше, бо небагато важких обчислень"
         self.plot_dec_window = PlotWindow(
             f"Час дешифрування зашифрованого повідомлення\n m:'{message}'",
             algorithms,
@@ -145,7 +151,7 @@ class MainWindow(QMainWindow):
         label = QLabel(
             "<h3>Про ECC (еліптична криптографія)</h3>"
             "<b>1. У чому відмінність від RSA, Rabin, ElGamal?</b><br>"
-            "ECC базується не на теорії чисел, а на складності обчислення дискретного логарифма "
+            "ECC базується не на теорії чисел, а на складності обчислення точок"
             "на еліптичних кривих. Це дозволяє досягати тієї ж безпеки при значно менших ключах.<br><br>"
             "<b>2. Які переваги?</b><br>"
             "- Менші ключі: ECC-256 ≈ RSA-3072 за рівнем безпеки<br>"

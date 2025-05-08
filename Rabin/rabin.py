@@ -1,5 +1,6 @@
 '''Rabin's algorithm for public key cryptography'''''
 import random
+import time
 
 def miller_rabin(n, k=100):
     """
@@ -47,7 +48,8 @@ def generate_keys(min_value, max_value):
     return (n, p, q)
 
 def encrypt(m, n):
-    return pow(m, 2, n)
+    numeric_str = ''.join(f"{ord(c):03d}" for c in m)
+    return pow(int(numeric_str), 2, n)
 
 def decrypt(c, p, q):
     n = p * q
@@ -67,20 +69,30 @@ def decrypt(c, p, q):
     r2 = crt(mp, -mq % q)
     r3 = crt(-mp % p, mq)
     r4 = crt(-mp % p, -mq % q)
+    r1 = str(r1)
+    r1 = '0' * ((3 - len(r1) % 3) % 3) + r1
+    r1 = ''.join(chr(int(r1[i:i+3])) for i in range(0, len(r1), 3))
+    r2 = str(r2)
+    r2 = '0' * ((3 - len(r2) % 3) % 3) + r2
+    r2 = ''.join(chr(int(r2[i:i+3])) for i in range(0, len(r2), 3))
+    r3 = str(r3)
+    r3 = '0' * ((3 - len(r3) % 3) % 3) + r3
+    r3 = ''.join(chr(int(r3[i:i+3])) for i in range(0, len(r3), 3))
+    r4 = str(r4)
+    r4 = '0' * ((3 - len(r4) % 3) % 3) + r4
+    r4 = ''.join(chr(int(r4[i:i+3])) for i in range(0, len(r4), 3))
 
-    # Return unique roots
-    return tuple(sorted({r1, r2, r3, r4}))
+    return (r1, r2, r3, r4)
 
-if __name__ == "__main":
+if __name__ == "__main__":
     # Example usage
-    n, p, q = generate_keys(10**50, 10**51)
-    print(f"Generated keys: n={n}, p={p}, q={q}")
+    n, p, q = generate_keys(10**100, 10**101)
+    # print(f"Generated keys: n={n}, p={p}, q={q}")
 
-    message = 42
-    assert message < n, "Message must be smaller than n!"
+    message = "Test message for checking encoding and decoding speed"
 
     ciphertext = encrypt(message, n)
-    print(f"Ciphertext: {ciphertext}")
+    # print(f"Ciphertext: {ciphertext}")
 
     decrypted = decrypt(ciphertext, p, q)
     print(f"Decrypted roots: {decrypted}")
