@@ -84,6 +84,10 @@ class MainWindow(QMainWindow):
         self.sec_btn.clicked.connect(self.show_security_info)
         layout.addWidget(self.sec_btn)
 
+        self.ecc_btn = QPushButton("Про ECC")
+        self.ecc_btn.clicked.connect(self.show_ecc_info)
+        layout.addWidget(self.ecc_btn)
+
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
@@ -106,7 +110,7 @@ class MainWindow(QMainWindow):
         # Графік шифрування
         enc_footer = "RSA шифрує найшвидше, ElGamal трохи повільніше. Rabin та ECC не реалізовані."
         self.plot_enc_window = PlotWindow(
-            f"Час шифрування повідомлення\n '{message}'",
+            f"Час шифрування повідомлення\n m:'{message}'",
             algorithms,
             enc_times,
             "Час (с)",
@@ -117,7 +121,7 @@ class MainWindow(QMainWindow):
         # Графік дешифрування
         dec_footer = "Розшифрування в RSA повільніше через велику приватну експоненту."
         self.plot_dec_window = PlotWindow(
-            f"Час дешифрування зашифрованого повідомлення\n '{message}'",
+            f"Час дешифрування зашифрованого повідомлення\n m:'{message}'",
             algorithms,
             dec_times,
             "Час (с)",
@@ -133,6 +137,32 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel("RSA: 2048 біт, ECC: 256 біт ..."))
         self.sec_window.setLayout(layout)
         self.sec_window.show()
+
+    def show_ecc_info(self):
+        self.ecc_window = QWidget()
+        self.ecc_window.setWindowTitle("Про ECC")
+        layout = QVBoxLayout()
+        label = QLabel(
+            "<h3>Про ECC (еліптична криптографія)</h3>"
+            "<b>1. У чому відмінність від RSA, Rabin, ElGamal?</b><br>"
+            "ECC базується не на теорії чисел, а на складності обчислення дискретного логарифма "
+            "на еліптичних кривих. Це дозволяє досягати тієї ж безпеки при значно менших ключах.<br><br>"
+            "<b>2. Які переваги?</b><br>"
+            "- Менші ключі: ECC-256 ≈ RSA-3072 за рівнем безпеки<br>"
+            "- Швидка генерація ключів<br>"
+            "- Менше використання памʼяті<br><br>"
+            "<b>3. Наскільки складна реалізація?</b><br>"
+            "Реалізація ECC складніша за RSA чи Rabin, бо потребує знань роботи з точками на кривій, "
+            "обчислень у полях та контролю над випадками нескінченних точок.<br><br>"
+            "<b>4. У яких сценаріях виграє або програє?</b><br>"
+            "ECC виграє у мобільних, вбудованих системах, де критичні розміри ключів і швидкість.<br>"
+            "Програє там, де є обмеження на складність реалізації або де стандартом є RSA.<br>"
+        )
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        self.ecc_window.setLayout(layout)
+        self.ecc_window.resize(600, 400)
+        self.ecc_window.show()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
