@@ -49,4 +49,8 @@ or
 ```
 python3 client_ui.py
 ```
+#### To see algorythms analysys:
+```
+analysis.py
+```
 📄 [Project Report (PDF)](./report.pdf)
