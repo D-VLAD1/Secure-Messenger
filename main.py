@@ -34,6 +34,12 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
     """WebSocket endpoint for chat application.
     Handles incoming messages and broadcasts them to the appropriate recipient.
     """
+    if username in connected_users:
+        await websocket.accept()
+        await websocket.send_text("__ERROR__:Username already taken")
+        await websocket.close()
+        return
+
     await websocket.accept()
     public_key = await websocket.receive_text()
     connected_users[username] = (websocket, public_key)
@@ -46,7 +52,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
         while True:
             data = await websocket.receive_json()
             try:
-                recipient, message, iv, signature, y = data
+                sender, recipient, message, iv, signature, y = data
             except ValueError:
                 await websocket.send_text("❌ Некоректний формат повідомлення.")
                 continue

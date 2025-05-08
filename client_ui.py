@@ -36,6 +36,8 @@ class ChatClient(QWidget):
         super().__init__()
         self.private_key, self.public_key = ECC.create_keys()
 
+        self._connected = False
+
         self.setWindowTitle("Secure Messenger 💬 (PyQt6)")
         self.resize(600, 600)
 
@@ -96,6 +98,14 @@ class ChatClient(QWidget):
             QMessageBox.warning(self, "Помилка", "Введіть ім'я користувача.")
             return
 
+        for el in self.username:
+            if not(65 <= ord(el) <= 90 or 97 <= ord(el) <= 122 or 48 <= ord(el) <= 57):
+                QMessageBox.warning(self, "Помилка", "Ім'я може містити лише літери та цифри.")
+                return
+
+        self.username_input.setEnabled(False)
+        self.connect_button.setEnabled(False)
+
         self.add_chat_message(f"🔗 Підключення як {self.username}...")
 
         self.loop = asyncio.new_event_loop()
@@ -135,13 +145,23 @@ class ChatClient(QWidget):
     async def listen_messages(self):
         """Listen for incoming messages from the server."""
         async for content in self.websocket:
+
+            if content.startswith("__ERROR__:Username already taken"):
+                self.signals.new_message.emit("❌ Ім’я вже зайняте. Виберіть інше.")
+                await self.websocket.close()
+                return
+            else:
+                if not self._connected:
+                    self.signals.new_message.emit("✅ Підключено до сервера!")
+                    self._connected = True
+
             if isinstance(content, str) and content.startswith("__USERS__:"):
                 users_str = content.replace("__USERS__:", "")
                 users = users_str.split(",") if users_str else []
                 self.signals.update_users.emit(users)
 
             try:
-                username, message, iv, signature, y = json.loads(content) ## unpackin required variables
+                username, _, message, iv, signature, y = json.loads(content) ## unpackin required variables
                 message, iv = ast.literal_eval(message), base64.b64decode(ast.literal_eval(iv)) ## unpacking bytes from str
                 r, s = signature
                 decrypted_msg = ECC.decrypt(self.private_key, message, iv).strip() # decryption
@@ -159,15 +179,14 @@ class ChatClient(QWidget):
     async def connect_to_server(self):
         """Connect to the WebSocket server."""
         uri = SERVER_URL + self.username
-        #try:
-        async with websockets.connect(uri) as websocket:
-            self.websocket = websocket
-            await websocket.send(str(self.public_key))
-            self.signals.new_message.emit("✅ Підключено до сервера!")
-            await self.listen_messages()
-        # except Exception as e:
-        #     print(e)
-        #     self.signals.new_message.emit(f"❌ Помилка підключення: {e}")
+        try:
+            async with websockets.connect(uri) as websocket:
+                self.websocket = websocket
+                await websocket.send(str(self.public_key))
+                await self.listen_messages()
+        except Exception as e:
+            print(e)
+            self.signals.new_message.emit(f"❌ Помилка підключення: {e}")
 
     def send_message(self):
         """Send a message to the selected recipient."""
@@ -186,7 +205,7 @@ class ChatClient(QWidget):
             QMessageBox.warning(self, "Помилка", "Повідомлення порожнє.")
             return
 
-        to_send = json.dumps((self.selected_recipient, str(encrypted_msg), str(iv), signature, y))
+        to_send = json.dumps((self.username, self.selected_recipient, str(encrypted_msg), str(iv), signature, y))
         asyncio.run_coroutine_threadsafe(self.websocket.send(to_send), self.loop)
         self.add_chat_message(f"➡️ Ви до {self.selected_recipient}: {message_text}")
         self.message_input.clear()
