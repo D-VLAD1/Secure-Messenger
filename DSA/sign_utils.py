@@ -1,7 +1,7 @@
 """Module to generate DSA keys and parameters."""
 import random
 import hashlib
-from utils import get_prime, get_strong_prime
+from DSA.utils import get_prime, get_strong_prime
 
 def generate_params():
     """
@@ -40,8 +40,7 @@ def sign_message(message, p, q, g, x):
     r is the first part of the signature,
     s is the second part of the signature.
     """
-    hash_obj = hashlib.sha1()
-    hash_obj.update(message.encode()) # just hashin the message
+    hash_obj = hashlib.sha1(message.encode())
     hash_value = int(hash_obj.hexdigest(), 16)
 
     while True:

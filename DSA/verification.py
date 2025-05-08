@@ -6,8 +6,7 @@ def verify_sign(message, sign, p, q, g, y):
     if not (0 < r < q and 0 < s < q): # basic check
         return False
 
-    hash_obj = hashlib.sha1()
-    hash_obj.update(message.encode()) # hash again
+    hash_obj = hashlib.sha1(message.encode()) # hash again
     hash_v = int(hash_obj.hexdigest(), 16)
 
     w = pow(s, -1, q) # inverted s in power of q
