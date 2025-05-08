@@ -1,5 +1,5 @@
 asyncio==3.4.3
-hashlib==3.2.0
+hashlib==0.2.1
 fastapi==0.115.12
 json==2.0.9
 pycryptodome==3.22.0

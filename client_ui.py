@@ -23,7 +23,7 @@ p = int(lines[0].split(": ")[1])
 q = int(lines[1].split(": ")[1])
 g = int(lines[2].split(": ")[1])
 
-SERVER_URL = "ws://localhost:8000/ws/"
+SERVER_URL = "ws://helo-bw8r.onrender.com/ws/"
 
 class SignalHandler(QObject):
     """Signal handler for PyQt signals."""
