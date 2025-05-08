@@ -124,7 +124,7 @@ class ChatClient(QWidget):
 
     def __fetch_public_key(self, username):
         try:
-            uri = f'http://helo-bw8r.onrender.com/ws/get_key_{username}'
+            uri = f'https://helo-bw8r.onrender.com/ws/get_key_{username}'
             with urllib.request.urlopen(uri) as response:
                 public_key = response.read().decode() ## gettin key from server
                 self.selected_recipient_key = ast.literal_eval(public_key)
