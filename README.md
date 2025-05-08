@@ -51,6 +51,6 @@ python3 client_ui.py
 ```
 #### To see algorythms analysys:
 ```
-python3 analysis.py
+python3 -m analysis.analysis
 ```
 📄 [Project Report (PDF)](./report.pdf)
