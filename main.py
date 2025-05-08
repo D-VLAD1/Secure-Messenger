@@ -9,7 +9,7 @@ from DSA.sign_utils import generate_params
 app = FastAPI()
 connected_users: Dict[str, tuple[WebSocket, str]] = {}
 
-p, q, g = generate_params()
+# p, q, g = generate_params()
 
 with open("DSA_params.txt", "w", encoding="utf-8") as f:
     f.write(f"p: {p}\n")
