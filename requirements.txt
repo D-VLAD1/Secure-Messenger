@@ -1,13 +1,8 @@
-asyncio==3.4.3
 fastapi==0.115.12
-json==2.0.9
 pycryptodome==3.22.0
 PyQt6==6.9.0
 PyQt6-Qt6==6.9.0
 PyQt6_sip==13.10.0
-random==2.0.1
-typing-inspection==0.4.0
-typing_extensions==4.13.2
 sympy==1.14.0
 urllib3==2.4.0
 uvicorn==0.34.2
