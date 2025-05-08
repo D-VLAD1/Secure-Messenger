@@ -23,7 +23,7 @@ p = int(lines[0].split(": ")[1])
 q = int(lines[1].split(": ")[1])
 g = int(lines[2].split(": ")[1])
 
-SERVER_URL = "ws://helo-bw8r.onrender.com/ws/"
+SERVER_URL = "wss://helo-bw8r.onrender.com/ws/"
 
 class SignalHandler(QObject):
     """Signal handler for PyQt signals."""
@@ -122,11 +122,10 @@ class ChatClient(QWidget):
             if user != self.username:
                 self.users_list.addItem(user)
 
-    def __fetch_public_key(self, username):
+    async def __fetch_public_key(self, username):
         try:
-            uri = f'https://helo-bw8r.onrender.com/ws/get_key_{username}'
-            with urllib.request.urlopen(uri) as response:
-                public_key = response.read().decode() ## gettin key from server
+            with websockets.connect(SERVER_URL + f'ws/get_key_{username}') as websocket:
+                public_key = await websocket.recieve_text() ## gettin key from server
                 self.selected_recipient_key = ast.literal_eval(public_key)
         except Exception as e:
             print(f"❌ Помилка отримання ключа користувача {username}: {e}")

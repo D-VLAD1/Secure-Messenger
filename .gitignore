@@ -1,3 +1,5 @@
 __pycache__/
 DSA_params.txt
 render.yaml
+.venv1
+.idea

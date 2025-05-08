@@ -22,12 +22,11 @@ async def broadcast_users():
     for user_ws, public_key in connected_users.values():
         await user_ws.send_text(f"__USERS__:{','.join(user_list)}")
 
-@app.get("/ws/get_key_{username}", response_class=PlainTextResponse)
-async def get_user_public_key(username: str):
-    """
-    Sending public key we are writing to
-    """
-    return connected_users[username][1]
+@app.websocket("/ws/get_key_{username}")
+async def websocket_get_key(websocket: WebSocket, username: str):
+    await websocket.accept()
+    await websocket.send_text(str(connected_users[username][1]))
+    await websocket.close()
 
 @app.websocket("/ws/{username}")
 async def websocket_endpoint(websocket: WebSocket, username: str):
